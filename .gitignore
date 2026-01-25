@@ -21,7 +21,6 @@ wheels/
 *.egg
 
 # Virtual environments
-.env
 .venv
 env/
 venv/
@@ -48,3 +47,4 @@ agent_graph.md
 # OS
 .DS_Store
 Thumbs.db
+.gitignore
