@@ -21,56 +21,12 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from tools.search_ddg import search_ddg
+from tools.search_ddgs import search_ddgs
 from tools.fetch_page import fetch_page
 
 # youngjin-langchain-tools 라이브러리에서 핸들러 import
 from youngjin_langchain_tools import StreamlitLanggraphHandler
 
-
-# ============================================================
-# API Keys 설정
-# ============================================================
-OPENAI_API_KEY = ""
-ANTHROPIC_API_KEY = ""
-GOOGLE_API_KEY = ""
-
-import os
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    import warnings
-    warnings.warn(
-        ".env 파일을 통한 API Key 로드에 실패했습니다. main.py 상단에 입력된 API Key를 사용합니다.",
-        ImportWarning,
-    )
-
-if not os.getenv("OPENAI_API_KEY") and OPENAI_API_KEY:
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
-
-if not os.getenv("ANTHROPIC_API_KEY") and ANTHROPIC_API_KEY:
-    os.environ["ANTHROPIC_API_KEY"] = ANTHROPIC_API_KEY
-
-if not os.getenv("GOOGLE_API_KEY") and GOOGLE_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
-
-missing_keys = []
-if not os.getenv("OPENAI_API_KEY"):
-    missing_keys.append("OPENAI_API_KEY")
-if not os.getenv("ANTHROPIC_API_KEY"):
-    missing_keys.append("ANTHROPIC_API_KEY")
-if not os.getenv("GOOGLE_API_KEY"):
-    missing_keys.append("GOOGLE_API_KEY")
-
-if missing_keys:
-    import warnings
-    warnings.warn(
-        f"다음 API Key가 설정되지 않았습니다: {', '.join(missing_keys)}. "
-        ".env 파일을 사용하거나, main.py 상단에 직접 API Key를 입력해주세요.",
-        UserWarning,
-    )
 
 
 # ============================================================
@@ -141,7 +97,7 @@ def select_model():
 
 
 def create_web_browsing_agent():
-    tools = [search_ddg, fetch_page]
+    tools = [search_ddgs, fetch_page]
     llm = select_model()
 
     summarization_middleware = SummarizationMiddleware(
@@ -180,10 +136,11 @@ def main():
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.chat_message("assistant"):
-            # youngjin-langchain-tools의 StreamlitLanggraphHandler를 사용
+            # 콜백 함수 설정 (에이전트 동작 시각화용, youngjin-langchain-tools의 StreamlitLanggraphHandler 사용)
             handler = StreamlitLanggraphHandler(
                 container=st.container(),
                 expand_new_thoughts=True,  # 도구 호출 시 자동 확장
+                max_thought_containers=4,
             )
 
             # 에이전트 실행 및 응답 받기

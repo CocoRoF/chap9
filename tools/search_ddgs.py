@@ -1,11 +1,11 @@
 from itertools import islice
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 
 """
-DuckDuckGo Python 라이브러리의 응답 예시
+DDGS Python 라이브러리의 응답 예시
 --------------------------------------------
 [
     {
@@ -17,14 +17,15 @@ DuckDuckGo Python 라이브러리의 응답 예시
 """
 
 
-class SearchDDGInput(BaseModel):
+
+class SearchDDGSInput(BaseModel):
     query: str = Field(description="검색할 키워드를 입력하세요")
 
 
-@tool(args_schema=SearchDDGInput)
-def search_ddg(query, max_result_num=5):
+@tool(args_schema=SearchDDGSInput)
+def search_ddgs(query, max_result_num=5):
     """
-    DuckDuckGo 검색을 실행하는 도구입니다.
+    DDGS 검색을 실행하는 도구입니다.
     검색할 키워드를 입력해 사용해 주세요.
     검색 결과의 각 페이지에 대한 제목, 스니펫(설명), URL이 반환됩니다.
     이 도구에서 얻을 수 있는 정보는 매우 단순화되어 있으며, 경우에 따라 오래된 정보일 수도 있습니다.
@@ -40,9 +41,7 @@ def search_ddg(query, max_result_num=5):
     - snippet
     - url
     """
-
-    # 현재 덕덕고 8.1.1 버전에서 임시적으로 Bing 백엔드만 사용하도록 변경되었습니다. (beckend 파라미터 제거)
-    res = DDGS().text(query, region="wt-wt", safesearch="off")
+    res = DDGS().text(query, region="ko-kr", safesearch="off", backend="duckduckgo")
     return [
         {
             "title": r.get("title", ""),
