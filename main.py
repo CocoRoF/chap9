@@ -1,16 +1,3 @@
-"""
-Web Browsing Agent with StreamlitLanggraphHandler
-
-이 파일은 youngjin-langchain-tools 라이브러리의 StreamlitLanggraphHandler를
-사용하여 LangGraph 에이전트를 Streamlit에서 깔끔하게 시각화하는 예제입니다.
-
-Usage:
-    streamlit run main_youngjin.py
-
-Requirements:
-    pip install youngjin-langchain-tools[streamlit]
-"""
-
 import streamlit as st
 from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware
@@ -24,10 +11,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from tools.search_ddgs import search_ddgs
 from tools.fetch_page import fetch_page
 
-# youngjin-langchain-tools 라이브러리에서 핸들러 import
 from youngjin_langchain_tools import StreamlitLanggraphHandler
-
-
 
 # ============================================================
 # System Prompt
