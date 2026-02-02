@@ -3,6 +3,7 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
 import uuid
+import os
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
@@ -10,14 +11,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from tools.search_ddg import search_ddg
 from tools.fetch_page import fetch_page
+from youngjin_langchain_tools import StreamlitLanggraphHandler
 
 
 OPENAI_API_KEY = ""
 ANTHROPIC_API_KEY = ""
 GOOGLE_API_KEY = ""
-
-
-import os
 
 try:
     from dotenv import load_dotenv
@@ -151,57 +150,19 @@ def main():
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.chat_message("assistant"):
-            config = {"configurable": {"thread_id": st.session_state["thread_id"]}}
-            final_response = ""
-            status_container = st.status("🤔 Thinking...", expanded=True)
-            response_placeholder = st.empty()
+            handler = StreamlitLanggraphHandler(
+                container=st.container(),
+                expand_new_thoughts=True,
+            )
 
-            for stream_mode, data in web_browsing_agent.stream(
-                {"messages": [{"role": "user", "content": prompt}]},
-                config=config,
-                stream_mode=["messages", "updates"]
-            ):
-                if stream_mode == "updates":
-                    for source, update in data.items():
-                        if not isinstance(update, dict):
-                            continue
+            response = handler.invoke(
+                agent=web_browsing_agent,
+                input={"messages": [{"role": "user", "content": prompt}]},
+                config={"configurable": {"thread_id": st.session_state["thread_id"]}}
+            )
 
-                        messages = update.get("messages", [])
-                        for msg in messages:
-                            if hasattr(msg, 'tool_calls') and msg.tool_calls:
-                                for tc in msg.tool_calls:
-                                    with status_container:
-                                        st.write(f"🔧 **{tc.get('name', 'tool')}**: `{tc.get('args', {})}`")
-
-                            if source == "tools" and hasattr(msg, 'name'):
-                                tool_name = msg.name
-                                tool_content = str(msg.content) if hasattr(msg, 'content') else ""
-
-                                with status_container:
-                                    st.write(f"✅ **{tool_name}** 완료")
-                                    with st.expander(f"📋 {tool_name} 결과 보기", expanded=False):
-                                        if len(tool_content) > 2000:
-                                            st.code(tool_content[:2000] + "\n... (truncated)", language="text")
-                                        else:
-                                            st.code(tool_content, language="text")
-
-                elif stream_mode == "messages":
-                    chunk, metadata = data
-
-                    if metadata.get("langgraph_node") == "tools":
-                        continue
-
-                    if hasattr(chunk, 'content') and chunk.content:
-                        if hasattr(chunk, 'tool_call_chunks') and chunk.tool_call_chunks:
-                            continue
-                        final_response += chunk.content
-                        response_placeholder.markdown(final_response + "▌")
-
-            status_container.update(label="✅ Complete!", state="complete", expanded=False)
-
-            if final_response:
-                response_placeholder.markdown(final_response)
-                st.session_state.messages.append({"role": "assistant", "content": final_response})
+            if response:
+                st.session_state.messages.append({"role": "assistant", "content": response})
 
 
 if __name__ == "__main__":

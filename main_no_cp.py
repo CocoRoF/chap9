@@ -1,21 +1,7 @@
-"""
-Web Browsing Agent with StreamlitLanggraphHandler
-
-이 파일은 youngjin-langchain-tools 라이브러리의 StreamlitLanggraphHandler를
-사용하여 LangGraph 에이전트를 Streamlit에서 깔끔하게 시각화하는 예제입니다.
-
-Usage:
-    streamlit run main_youngjin.py
-
-Requirements:
-    pip install youngjin-langchain-tools[streamlit]
-"""
-
 import streamlit as st
 from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware
-from langgraph.checkpoint.memory import InMemorySaver
-import uuid
+import os
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
@@ -23,19 +9,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from tools.search_ddg import search_ddg
 from tools.fetch_page import fetch_page
-
-# youngjin-langchain-tools 라이브러리에서 핸들러 import
 from youngjin_langchain_tools import StreamlitLanggraphHandler
 
 
-# ============================================================
-# API Keys 설정
-# ============================================================
 OPENAI_API_KEY = ""
 ANTHROPIC_API_KEY = ""
 GOOGLE_API_KEY = ""
-
-import os
 
 try:
     from dotenv import load_dotenv
@@ -73,9 +52,6 @@ if missing_keys:
     )
 
 
-# ============================================================
-# System Prompt
-# ============================================================
 CUSTOM_SYSTEM_PROMPT = """
 당신은 사용자의 요청에 따라 인터넷에서 정보를 조사하는 어시스턴트입니다.
 사용 가능한 도구를 활용하여 조사한 정보를 설명해주세요.
@@ -109,9 +85,6 @@ CUSTOM_SYSTEM_PROMPT = """
 """
 
 
-# ============================================================
-# Streamlit UI Functions
-# ============================================================
 def init_page():
     st.set_page_config(page_title="Web Browsing Agent", page_icon="🤗")
     st.header("Web Browsing Agent 🤗")
@@ -124,8 +97,6 @@ def init_messages():
         st.session_state.messages = [
             {"role": "assistant", "content": "안녕하세요! 무엇이든 질문해주세요!"}
         ]
-        st.session_state["checkpointer"] = InMemorySaver()
-        st.session_state["thread_id"] = str(uuid.uuid4())
 
 
 def select_model():
@@ -154,7 +125,6 @@ def create_web_browsing_agent():
         model=llm,
         tools=tools,
         system_prompt=CUSTOM_SYSTEM_PROMPT,
-        checkpointer=st.session_state["checkpointer"],
         middleware=[summarization_middleware],
         debug=True
     )
@@ -162,38 +132,29 @@ def create_web_browsing_agent():
     return agent
 
 
-# ============================================================
-# Main Function - StreamlitLanggraphHandler 사용
-# ============================================================
 def main():
     init_page()
     init_messages()
     web_browsing_agent = create_web_browsing_agent()
 
-    # 대화 히스토리 표시
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
 
-    # 사용자 입력 처리
     if prompt := st.chat_input(placeholder="2025 한국시리즈 우승팀?"):
         st.chat_message("user").write(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.chat_message("assistant"):
-            # youngjin-langchain-tools의 StreamlitLanggraphHandler를 사용
             handler = StreamlitLanggraphHandler(
                 container=st.container(),
-                expand_new_thoughts=True,  # 도구 호출 시 자동 확장
+                expand_new_thoughts=True,
             )
 
-            # 에이전트 실행 및 응답 받기
             response = handler.invoke(
                 agent=web_browsing_agent,
                 input={"messages": [{"role": "user", "content": prompt}]},
-                config={"configurable": {"thread_id": st.session_state["thread_id"]}}
             )
 
-            # 응답 저장
             if response:
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
